@@ -14,11 +14,11 @@ void pyn(bool b) { std::cout << (b ? "YES" : "NO"); }
 template<typename T>
 class ST { // SEGMENT TREE
 	std::vector<T> m_st;
-	std::vector<T> m_arr;
+	const std::vector<T> m_arr;
 
-	using sum_sig = T(const T& a, const T& b);
+	using sum_sign = T(const T& a, const T& b);
 
-	std::function<sum_sig> m_sum;
+	std::function<sum_sign> m_sum;
 	
 	void m_build(int v, int tl, int tr) {
 		if (tl == tr) m_st[v] = m_arr[tl];
@@ -43,27 +43,12 @@ class ST { // SEGMENT TREE
 	}
 
 	public:
-		ST(std::initializer_list<T> ilist, std::function<sum_sig> sum) : m_arr(ilist), m_sum{sum} {
+		ST(const std::vector<T>& v, std::function<sum_sign> sum) : m_arr(v), m_sum{sum} {
 			m_st.resize(4*m_arr.size());
 			m_build(0, 0, m_arr.size()-1);
 		}
 		
-		template<class Iter1, class Iter2>
-		ST(Iter1 iter1, Iter2 iter2, std::function<sum_sig> sum) : m_arr(iter1, iter2), m_sum{sum} {
-			m_st.resize(4*m_arr.size());
-			m_build(0, 0, m_arr.size()-1);
-		}
-		
-		ST(const std::vector<T>& v, std::function<sum_sig> sum) : m_arr(v), m_sum{sum} {
-			m_st.resize(4*m_arr.size());
-			m_build(0, 0, m_arr.size()-1);
-		}
-
-		ST(const ST<T>& st) : ST(st.getArr(), st.m_sum) {}
-		
-		const std::vector<T>& getArr() const { return m_arr; };
-		
-		void update(int pos, const T& new_val) {
+		void update(const int pos, const T& new_val) {
 			m_update(0, 0, m_arr.size()-1, pos, new_val);
 		}
 };
@@ -71,29 +56,20 @@ class ST { // SEGMENT TREE
 template <typename T>
 class DST { // DISJOINT SPARSE TABLE
 	std::vector<std::vector<T>> m_dst;
-	std::vector<T> m_arr;
 
-	using min_sig = T(const T& a, const T& b);
+	using min_sign = T(const T& a, const T& b);
 
-	std::function<min_sig> m_min;
+	std::function<min_sign> m_min;
 
 	public:
-		DST(std::initializer_list<T> ilist, std::function<min_sig> _min) : m_arr(ilist), m_min{_min} {
-		   
-		}
-		
-		template<class Iter1, class Iter2>
-		DST(Iter1 iter1, Iter2 iter2, std::function<min_sig> _min) : m_arr(iter1, iter2), m_min{_min} {
-			
-		}
-		
-		DST(const std::vector<T>& v, std::function<min_sig> _min) : m_arr(v), m_min{_min} {
-			
+		const std::vector<T> m_arr;
+
+		DST(const std::vector<T>& v, std::function<min_sign> _min) : m_arr(v), m_min{_min} {
+			m_dst.resize(63, m_arr);
+			for (int i = 0; i < )			
 		}
 
-		DST(const DST<T>& dst) : DST(dst.getArr(), dst.m_min) {}
-		
-		const std::vector<T>& getArr() const { return m_arr; };
+		DST(const DST<T>& dst) : DST(dst.m_arr, dst.m_min) {}
 };
 
 signed main() {
