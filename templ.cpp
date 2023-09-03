@@ -3,21 +3,34 @@ using namespace std;
 
 #define int int64_t
 
-template<typename T>
+#define all(x) (x).begin(),(x).end()
+
+template<class T>
 std::ostream& operator<<(std::ostream& out, const std::vector<T>& v) {
 	for (const auto& i: v) out << i << ' ';
 	return out;
 }
 
-template<typename T>
+template<class T>
 std::istream& operator<<(std::istream& in, std::vector<T>& v) {
 	for (auto& i: v) in >> i;
 	return in;
-
 }
-void pyn(bool b) { std::cout << (b ? "YES" : "NO"); }
 
-template<typename T>
+template<class Iter>
+std::ostream& operator<<(std::ostream& out, Iter iter1, Iter iter2) {
+	for (Iter it = iter1; it != iter2; it++) out << *it << ' ';
+	return out;
+}
+
+template<class Iter>
+std::istream& operator<<(std::istream& in, Iter iter1, Iter iter2) {
+	for (Iter it = iter1; it != iter2; it++) in >> *it;
+	return in;
+}
+
+
+template<class T>
 class ST { // SEGMENT TREE
 	std::vector<T> m_st;
 	const std::vector<T> m_arr;
@@ -78,21 +91,21 @@ class ST { // SEGMENT TREE
 		}
 };
 
-template <typename T>
+template <class T>
 class DST { // DISJOINT SPARSE TABLE
 	std::vector<std::vector<T>> m_dst_l;
 	std::vector<std::vector<T>> m_dst_r;	
 
-	std::function<const T&(const T&, const T&)> m_min;
+	std::function<T(const T&, const T&)> m_min;
 
 	public:
 		const std::vector<T> m_arr;
 
-		DST(const std::vector<T>& v, std::function<const T&(const T&, const T&)> _min) : m_arr(v), m_min{_min} {
+		DST(const std::vector<T>& v, std::function<T(const T&, const T&)> _min) : m_arr(v), m_min{_min} {
 			m_dst_l.resize(63, m_arr);
 			m_dst_r.resize(63, m_arr);
-			for (int i = 1; i < 64; i++) {
-				int curr = ((int)1)<<i;
+			for (int i = 1; i < 63; i++) {
+				const int curr = ((int)1)<<i;
 				for (int j = 0; j < m_arr.size(); j++) {
 					if (j%curr != 0) m_dst_l[i][j] = m_min(m_dst_l[i][j], m_dst_l[i][j-1]);
 				}
@@ -106,22 +119,18 @@ class DST { // DISJOINT SPARSE TABLE
 
 		T query(int l, int r) {
 			const int diff = r-l+1;
-			
-			char lg = __lg(diff);
-			if (__builtin_popcountll(diff) != 1) lg++;
-
+			const char lg = diff&(diff-1) == 0 ? __lg(diff) : __lg(diff)+1;
 			const int curr = ((int)1)<<lg;
 
-			if (l%curr <= curr-diff) lg--;
-
-			return m_min(m_dst_l[lg][l], m_dst_r[lg][r]);
+			if (l%curr <= curr-diff) return m_min(m_dst_r[lg-1][l], m_dst_l[lg-1][r]);
+			else return m_min(m_dst_r[lg][l], m_dst_l[lg][r]);
 		}
 };
 
 signed main() {
 
-	DST<int> dst({1, 2, 3}, [](int a, int b){return (a < b) ? a : b;});
-	cout << dst.query(1, 2) << endl;
+	DST<int> dst({1, 2, 3, 4, 5}, [](int a, int b) {return a + b;});
+	cout << dst.query(2, 4) << endl;
 
 	return 0;
 }
