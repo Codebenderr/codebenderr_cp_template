@@ -17,17 +17,6 @@ std::istream& operator<<(std::istream& in, std::vector<T>& v) {
 	return in;
 }
 
-template<class Iter>
-std::ostream& operator<<(std::ostream& out, Iter iter1, Iter iter2) {
-	for (Iter it = iter1; it != iter2; it++) out << *it << ' ';
-	return out;
-}
-
-template<class Iter>
-std::istream& operator<<(std::istream& in, Iter iter1, Iter iter2) {
-	for (Iter it = iter1; it != iter2; it++) in >> *it;
-	return in;
-}
 
 
 template<class T>
@@ -48,8 +37,8 @@ class ST { // SEGMENT TREE
 		}
 	}
 
-	void m_update(int v, int tl, int tr, int pos, const T& new_val) {
-		if (tl == tr) { m_st[v] = new_val; m_arr[pos] = new_val; }
+	void m_update(int v, int tl, int tr, const int pos, const T& new_val) {
+		if (tl == tr) m_st[v] = new_val;
 		else {
 			m_push(m_st[v], m_st[2*v + 1], m_st[2*v + 2]);
 			int tm = (tl + tr) / 2;
@@ -62,11 +51,13 @@ class ST { // SEGMENT TREE
 	}
 
 	T m_query(int v, int tl, int tr, int l, int r) {
-	    if (l > r) return 0;
+	    if (r != l) m_push(m_st[v], m_st[2*v + 1], m_st[2*v + 2]);
 	    if (l == tl && r == tr) { return m_st[v]; }
-	    m_push(m_st[v], m_st[2*v + 1], m_st[2*v + 2]);
 	    int tm = (tl + tr) / 2;
-	    return m_sum(m_query(v*2 + 1, tl, tm, l, min(r, tm)), m_query(v*2  + 2, tm+1, tr, max(l, tm+1), r));
+	    if (l <= tm && r <= tm) return m_query(v*2 + 1, tl, tm, l, r);
+	    else if (l > tm && r > tm) return m_query(v*2 + 2, tm+1, tr, l, r);
+	    else
+	    	return m_sum(m_query(v*2 + 1, tl, tm, l, tm), m_query(v*2 + 2, tm+1, tr, tm+1, r));
 	}
 
 
@@ -82,11 +73,11 @@ class ST { // SEGMENT TREE
 			m_build(0, 0, m_arr.size()-1);
 		}
 		
-		void update(const int pos, const T& new_val) {
+		void upd(const int pos, const T& new_val) {
 			m_update(0, 0, m_arr.size()-1, pos, new_val);
 		}
 
-		T query(int l, int r) {
+		T q(int l, int r) {
 			return m_query(0, 0, m_arr.size()-1, l, r);
 		}
 };
@@ -94,7 +85,7 @@ class ST { // SEGMENT TREE
 template <class T>
 class DST { // DISJOINT SPARSE TABLE
 	std::vector<std::vector<T>> m_dst_l;
-	std::vector<std::vector<T>> m_dst_r;	
+	std::vector<std::vector<T>> m_dst_r;
 
 	std::function<T(const T&, const T&)> m_min;
 
@@ -118,6 +109,8 @@ class DST { // DISJOINT SPARSE TABLE
 		DST(const DST<T>& dst) : DST(dst.m_arr, dst.m_min) {}
 
 		T query(int l, int r) {
+			if (l == r) return m_arr[l];
+
 			const int diff = r-l+1;
 			const char lg = diff&(diff-1) == 0 ? __lg(diff) : __lg(diff)+1;
 			const int curr = ((int)1)<<lg;
@@ -130,7 +123,7 @@ class DST { // DISJOINT SPARSE TABLE
 signed main() {
 
 	DST<int> dst({1, 2, 3, 4, 5}, [](int a, int b) {return a + b;});
-	cout << dst.query(2, 4) << endl;
+	cout << dst.query(2, 2) << endl;
 
 	return 0;
 }
