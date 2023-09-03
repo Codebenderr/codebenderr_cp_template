@@ -9,6 +9,12 @@ std::ostream& operator<<(std::ostream& out, const std::vector<T>& v) {
 	return out;
 }
 
+template<typename T>
+std::istream& operator<<(std::istream& in, std::vector<T>& v) {
+	for (auto& i: v) in >> i;
+	return in;
+
+}
 void pyn(bool b) { std::cout << (b ? "YES" : "NO"); }
 
 template<typename T>
@@ -16,9 +22,8 @@ class ST { // SEGMENT TREE
 	std::vector<T> m_st;
 	const std::vector<T> m_arr;
 
-	using sum_sign = T(const T& a, const T& b);
-
-	std::function<sum_sign> m_sum;
+	std::function<T(const T& a, const T& b)> m_sum;
+	std::function<void(T&, T&, T&)> m_push;
 	
 	void m_build(int v, int tl, int tr) {
 		if (tl == tr) m_st[v] = m_arr[tl];
@@ -33,6 +38,7 @@ class ST { // SEGMENT TREE
 	void m_update(int v, int tl, int tr, int pos, const T& new_val) {
 		if (tl == tr) { m_st[v] = new_val; m_arr[pos] = new_val; }
 		else {
+			m_push(m_st[v], m_st[2*v + 1], m_st[2*v + 2]);
 			int tm = (tl + tr) / 2;
 			if (pos <= tm)
 				m_update(v*2 + 1, tl, tm, pos, new_val);
@@ -42,8 +48,23 @@ class ST { // SEGMENT TREE
 		}
 	}
 
+	T m_query(int v, int tl, int tr, int l, int r) {
+	    if (l > r) return 0;
+	    if (l == tl && r == tr) { return m_st[v]; }
+	    m_push(m_st[v], m_st[2*v + 1], m_st[2*v + 2]);
+	    int tm = (tl + tr) / 2;
+	    return m_sum(m_query(v*2 + 1, tl, tm, l, min(r, tm)), m_query(v*2  + 2, tm+1, tr, max(l, tm+1), r));
+	}
+
+
 	public:
-		ST(const std::vector<T>& v, std::function<sum_sign> sum) : m_arr(v), m_sum{sum} {
+		ST(const std::vector<T>& v, std::function<T(const T&, const T&)> sum) : m_arr(v), m_sum{sum} {
+			m_push = [](T& a, T& b, T& c){};
+			m_st.resize(4*m_arr.size());
+			m_build(0, 0, m_arr.size()-1);
+		}
+
+		ST(const std::vector<T>& v, std::function<T(const T&, const T&)> sum, std::function<void(T&, T&, T&)> _push) : m_arr(v), m_sum{sum}, m_push{_push} {
 			m_st.resize(4*m_arr.size());
 			m_build(0, 0, m_arr.size()-1);
 		}
@@ -51,30 +72,56 @@ class ST { // SEGMENT TREE
 		void update(const int pos, const T& new_val) {
 			m_update(0, 0, m_arr.size()-1, pos, new_val);
 		}
+
+		T query(int l, int r) {
+			return m_query(0, 0, m_arr.size()-1, l, r);
+		}
 };
 
 template <typename T>
 class DST { // DISJOINT SPARSE TABLE
-	std::vector<std::vector<T>> m_dst;
+	std::vector<std::vector<T>> m_dst_l;
+	std::vector<std::vector<T>> m_dst_r;	
 
-	using min_sign = T(const T& a, const T& b);
-
-	std::function<min_sign> m_min;
+	std::function<const T&(const T&, const T&)> m_min;
 
 	public:
 		const std::vector<T> m_arr;
 
-		DST(const std::vector<T>& v, std::function<min_sign> _min) : m_arr(v), m_min{_min} {
-			m_dst.resize(63, m_arr);
-			for (int i = 0; i < )			
+		DST(const std::vector<T>& v, std::function<const T&(const T&, const T&)> _min) : m_arr(v), m_min{_min} {
+			m_dst_l.resize(63, m_arr);
+			m_dst_r.resize(63, m_arr);
+			for (int i = 1; i < 64; i++) {
+				int curr = ((int)1)<<i;
+				for (int j = 0; j < m_arr.size(); j++) {
+					if (j%curr != 0) m_dst_l[i][j] = m_min(m_dst_l[i][j], m_dst_l[i][j-1]);
+				}
+				for (int j = m_arr.size()-2; j >= 0; j--) {
+					if (j%curr != curr-1) m_dst_r[i][j] = m_min(m_dst_r[i][j], m_dst_r[i][j+1]);
+				}
+			}
 		}
 
 		DST(const DST<T>& dst) : DST(dst.m_arr, dst.m_min) {}
+
+		T query(int l, int r) {
+			const int diff = r-l+1;
+			
+			char lg = __lg(diff);
+			if (__builtin_popcountll(diff) != 1) lg++;
+
+			const int curr = ((int)1)<<lg;
+
+			if (l%curr <= curr-diff) lg--;
+
+			return m_min(m_dst_l[lg][l], m_dst_r[lg][r]);
+		}
 };
 
 signed main() {
 
-
+	DST<int> dst({1, 2, 3}, [](int a, int b){return (a < b) ? a : b;});
+	cout << dst.query(1, 2) << endl;
 
 	return 0;
 }
